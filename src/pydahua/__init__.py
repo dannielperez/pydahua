@@ -1,4 +1,4 @@
-"""pydahua — small Python helpers for Dahua devices (HTTP CGI + RPC2)."""
+"""pydahua — small Python helpers for Dahua devices (HTTP CGI + RPC2) + broadcast terminals (/prod-api)."""
 
 from .client import (
     DAHUA_OUIS,
@@ -9,6 +9,12 @@ from .client import (
     is_dahua_mac,
 )
 from .config import parse_config, to_setconfig_params
+from .broadcast import (
+    DahuaBroadcastClient,
+    DahuaBroadcastError,
+    build_sip_edit_payload,
+    rsa_encrypt_password,
+)
 
 __all__ = [
     "DahuaClient",
@@ -19,4 +25,8 @@ __all__ = [
     "DAHUA_OUIS",
     "parse_config",
     "to_setconfig_params",
+    "DahuaBroadcastClient",
+    "DahuaBroadcastError",
+    "build_sip_edit_payload",
+    "rsa_encrypt_password",
 ]
