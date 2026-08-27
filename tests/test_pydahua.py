@@ -2,8 +2,11 @@
 
 import hashlib
 
+import pytest
+
 from pydahua import (
     DahuaClient,
+    DahuaError,
     is_dahua_mac,
     parse_config,
     to_setconfig_params,
@@ -59,6 +62,44 @@ def test_set_sip_server_builds_expected_items(monkeypatch):
         "SIP[0].SipServer.Port": "5060",
         "SIP[0].Enable": "true",
     }
+
+
+def test_change_password_calls_documented_cgi_primitive(monkeypatch):
+    captured = {}
+    client = DahuaClient("192.0.2.9", "operator", "old-secret")
+
+    def fake_cgi(path, params=None):
+        captured.update(path=path, params=params)
+        return "OK\r\n"
+
+    monkeypatch.setattr(client, "_cgi", fake_cgi)
+
+    client.change_password("old-secret", "NewSecret123!")
+
+    assert captured == {
+        "path": "/cgi-bin/userManager.cgi",
+        "params": {
+            "action": "modifyPassword",
+            "name": "operator",
+            "pwd": "NewSecret123!",
+            "pwdOld": "old-secret",
+        },
+    }
+
+
+def test_change_password_rejects_non_ok_response_without_echoing_secrets(monkeypatch):
+    client = DahuaClient("192.0.2.9", "admin", "old-secret")
+    monkeypatch.setattr(
+        client,
+        "_cgi",
+        lambda path, params=None: "ERROR new-secret",
+    )
+
+    with pytest.raises(DahuaError) as exc_info:
+        client.change_password("old-secret", "new-secret")
+
+    assert "old-secret" not in str(exc_info.value)
+    assert "new-secret" not in str(exc_info.value)
 
 
 def test_rpc_digest_formula():

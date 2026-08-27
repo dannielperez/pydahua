@@ -153,6 +153,20 @@ class DahuaClient:
     def reboot(self) -> None:
         self._cgi("/cgi-bin/magicBox.cgi", {"action": "reboot"})
 
+    def change_password(self, old_password: str, new_password: str) -> None:
+        """Change this user's password per Dahua HTTP API V1.67, section 9.7.7."""
+        text = self._cgi(
+            "/cgi-bin/userManager.cgi",
+            {
+                "action": "modifyPassword",
+                "name": self._user,
+                "pwd": new_password,
+                "pwdOld": old_password,
+            },
+        )
+        if text.strip().upper() != "OK":
+            raise DahuaError(f"{self.host}: modifyPassword did not return OK")
+
     # ── RPC2 (for methods with no CGI equivalent) ───────────────────
     def rpc_login(self) -> str:
         """Perform the Dahua RPC2 two-step MD5 login; returns the session id.
