@@ -100,6 +100,22 @@ def test_change_password_rejects_non_ok_response_without_echoing_secrets(monkeyp
 
     assert "old-secret" not in str(exc_info.value)
     assert "new-secret" not in str(exc_info.value)
+    # Failure must not rebind auth — the device still has the old password.
+    assert client._password == "old-secret"
+    assert client._s.auth.password == "old-secret"
+
+
+def test_change_password_rebinds_session_auth_on_success(monkeypatch):
+    """A client reused after rotation (e.g. to verify) must authenticate with
+    the new password, not the one the device just rejected the old value for."""
+    client = DahuaClient("192.0.2.9", "admin", "old-secret")
+    monkeypatch.setattr(client, "_cgi", lambda path, params=None: "OK\r\n")
+
+    client.change_password("old-secret", "new-secret")
+
+    assert client._password == "new-secret"
+    assert client._s.auth.username == "admin"
+    assert client._s.auth.password == "new-secret"
 
 
 def test_rpc_digest_formula():

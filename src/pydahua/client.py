@@ -154,7 +154,12 @@ class DahuaClient:
         self._cgi("/cgi-bin/magicBox.cgi", {"action": "reboot"})
 
     def change_password(self, old_password: str, new_password: str) -> None:
-        """Change this user's password per Dahua HTTP API V1.67, section 9.7.7."""
+        """Change this user's password per Dahua HTTP API V1.67, section 9.7.7.
+
+        On success, rebinds this client's own Digest auth to ``new_password`` —
+        the device now rejects the old one, so a caller that reuses this client
+        (e.g. to verify the change) must not have to know that internally.
+        """
         text = self._cgi(
             "/cgi-bin/userManager.cgi",
             {
@@ -166,6 +171,8 @@ class DahuaClient:
         )
         if text.strip().upper() != "OK":
             raise DahuaError(f"{self.host}: modifyPassword did not return OK")
+        self._password = new_password
+        self._s.auth = HTTPDigestAuth(self._user, new_password)
 
     # ── RPC2 (for methods with no CGI equivalent) ───────────────────
     def rpc_login(self) -> str:
